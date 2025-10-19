@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Happy Diwali to Nitish Sir — Rocket & Boom</title>
+<style>
+  :root{
+    --bg:#04030a;
+    --text-white: #fff;
+  }
+  html,body{
+    height:100%;
+    margin:0;
+    background:
+      radial-gradient(ellipse at 10% 10%, rgba(30,12,45,0.6) 0%, transparent 25%),
+      radial-gradient(ellipse at 90% 85%, rgba(6,6,10,0.6) 0%, transparent 20%),
+      var(--bg);
+    font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+    overflow:hidden;
+    color:var(--text-white);
+  }
+
+  /* full screen canvases */
+  canvas { position: fixed; left:0; top:0; width:100%; height:100%; pointer-events:none; z-index:1; }
+
+  /* UI stack */
+  .ui { position: relative; z-index:6; height:100%; display:flex; align-items:center; justify-content:center; flex-direction:column; text-align:center; pointer-events:none; }
+
+  /* Big star */
+  .big-star { width:220px; height:220px; opacity:0; transform-origin:center; z-index:7; pointer-events:none; }
+  .star-shape {
+    width:100%; height:100%;
+    background: conic-gradient(from 180deg, #ffd966, #f5b400 30%, #ffea8a 60%, #ffd966);
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    filter: drop-shadow(0 0 20px rgba(255,215,0,0.45));
+    animation: twist 3s ease-in-out infinite;
+  }
+  @keyframes twist { 0%{transform:rotate(0)} 50%{transform:rotate(12deg) scale(1.04)} 100%{transform:rotate(0)} }
+
+  /* Message */
+  .message { margin-top:1rem; pointer-events:none; font-weight:800; font-size:clamp(28px,6vw,64px); color:transparent;
+    background-image: linear-gradient(90deg,#f6d365 0%, #f5b34a 30%, #ffd84a 60%, #fff7c7 100%);
+    -webkit-background-clip:text; background-clip:text; opacity:0; transform:translateY(18px); transition: all 0.7s cubic-bezier(.2,.9,.2,1);
+  }
+  .message::after {
+    content:""; position:absolute; pointer-events:none;
+    width:180%; height:220%; left:-40%; top:-80%;
+    background-image: radial-gradient(circle at 10% 20%, rgba(255,255,255,0.9), rgba(255,255,255,0.12) 8px, transparent 28%),
+                      radial-gradient(circle at 80% 60%, rgba(255,255,255,0.8), rgba(255,255,255,0.10) 6px, transparent 22%);
+    mix-blend-mode: screen; opacity:0.95; animation: shimmer 2.2s linear infinite;
+  }
+  @keyframes shimmer { 0%{transform:translateX(-40%)} 50%{transform:translateX(3%)} 100%{transform:translateX(40%)} }
+
+  .subline { margin-top:0.6rem; color:rgba(255,255,255,0.88); font-size:clamp(12px,2vw,20px); opacity:0; transform:translateY(8px); transition:all .6s ease .05s; }
+
+  /* rocket element */
+  .rocket {
+    position: fixed;
+    left: 50%;
+    bottom: -120px;
+    transform: translateX(-50%) rotate(0deg);
+    width: 42px;
+    height: 110px;
+    z-index:8;
+    pointer-events:none;
+    opacity:0;
+  }
+  /* rocket shape (simple) */
+  .rocket-body{
+    position:absolute; left:50%; transform:translateX(-50%);
+    bottom:0; width:34px; height:70px; border-radius:18px 18px 6px 6px; background:linear-gradient(180deg,#e84d3b,#b22222);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.6), 0 0 18px rgba(255,120,60,0.08) inset;
+  }
+  .rocket-nose{
+    position:absolute; left:50%; transform:translateX(-50%); bottom:70px; width:0; height:0;
+    border-left:17px solid transparent; border-right:17px solid transparent; border-bottom:26px solid #ffd966;
+  }
+  .rocket-fin{
+    position:absolute; bottom:10px; width:12px; height:18px; background:#9b1f1f; transform-origin:center; border-radius:2px;
+  }
+  .fin-left{ left:-8px; transform: rotate(-16deg); }
+  .fin-right{ right:-8px; transform: rotate(16deg); }
+  .rocket-window{ position:absolute; left:50%; transform:translateX(-50%); top:22px; width:12px; height:12px; border-radius:50%; background: radial-gradient(circle at 35% 30%, #fff,#cfe8ff 35%, #6fb6ff 100%); box-shadow:0 2px 6px rgba(0,0,0,0.45);}
+
+  /* flame */
+  .flame { position:absolute; left:50%; transform:translateX(-50%); bottom:-34px; width:20px; height:60px; pointer-events:none; opacity:0; }
+  .flame .f { position:absolute; left:50%; transform:translateX(-50%); border-radius:50%; opacity:0.9; }
+  .f1{ width:20px; height:40px; bottom:0; background: radial-gradient(circle at 50% 30%, #fff7b6, #ffd24a 40%, rgba(255,160,50,0.8) 70%, rgba(255,80,10,0.05)); filter: blur(6px); }
+  .f2{ width:14px; height:34px; bottom:8px; background: radial-gradient(circle at 50% 30%, #fff, #ffd9a6 35%, rgba(255,100,30,0.9) 75%); filter: blur(4px); opacity:0.95; }
+
+  /* helper: visible when started */
+  .active .credit { display:none; }
+  .credit { position:fixed; left:16px; bottom:12px; font-size:13px; color:rgba(255,255,255,0.88); z-index:9; pointer-events:none; }
+
+  /* reveal utility classes */
+  .show-star { animation: starIn .9s cubic-bezier(.2,.9,.2,1) forwards; }
+  @keyframes starIn { from{opacity:0; transform:scale(.6)} to{opacity:1; transform:scale(1)} }
+  .reveal-text { opacity:1; transform:translateY(0); }
+  .reveal-sub { opacity:1; transform:translateY(0); }
+
+  @media (prefers-reduced-motion: reduce){
+    .star-shape, .message::after { animation:none; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+<canvas id="burst"></canvas>
+
+<div class="ui" id="ui">
+  <div class="big-star" id="bigStar" aria-hidden="true"><div class="star-shape"></div></div>
+  <div style="position:relative;">
+    <div class="message" id="messageText">Happy Diwali to Nitish Sir</div>
+    <div class="subline" id="subline">May your life shine bright like diyas ✨</div>
+  </div>
+</div>
+
+<!-- rocket DOM -->
+<div class="rocket" id="rocket" aria-hidden="true">
+  <div class="rocket-nose"></div>
+  <div class="rocket-body">
+    <div class="rocket-window"></div>
+  </div>
+  <div class="rocket-fin fin-left"></div>
+  <div class="rocket-fin fin-right"></div>
+  <div class="flame" id="flame">
+    <div class="f f1"></div>
+    <div class="f f2"></div>
+  </div>
+</div>
+
+<div class="credit" id="credit">Click anywhere to launch the rocket 🎆</div>
+
+<script>
+/* ========= setup canvases / sizing ========= */
+const starsCanvas = document.getElementById('stars');
+const burstCanvas = document.getElementById('burst');
+const sCtx = starsCanvas.getContext('2d');
+const bCtx = burstCanvas.getContext('2d');
+let DPR = Math.max(1, window.devicePixelRatio || 1);
+
+function fit(c){
+  c.width = Math.floor(window.innerWidth * DPR);
+  c.height = Math.floor(window.innerHeight * DPR);
+  c.style.width = window.innerWidth + 'px';
+  c.style.height = window.innerHeight + 'px';
+  c.getContext('2d').setTransform(DPR,0,0,DPR,0,0);
+}
+fit(starsCanvas); fit(burstCanvas);
+window.addEventListener('resize', ()=>{ fit(starsCanvas); fit(burstCanvas); initStars(); });
+
+/* ========= starry sprinkling (gentle) ========= */
+let stars = [];
+function rand(min,max){ return Math.random()*(max-min)+min; }
+function initStars(){
+  stars = [];
+  const count = Math.max(80, Math.floor(window.innerWidth/9));
+  for(let i=0;i<count;i++){
+    stars.push({
+      x: rand(0, innerWidth),
+      y: rand(0, innerHeight),
+      r: rand(0.5, 2.6),
+      alpha: rand(0.12,0.95),
+      vy: rand(0.02, 0.18),
+      sway: rand(0.2, 1.6),
+      phase: rand(0, Math.PI*2)
+    });
+  }
+}
+initStars();
+
+let last = performance.now();
+function drawStars(t){
+  const now = t || performance.now();
+  const dt = Math.min(40, now - last) / 16.666;
+  last = now;
+  sCtx.clearRect(0,0, innerWidth, innerHeight);
+  for(let p of stars){
+    p.y += p.vy * dt;
+    p.phase += 0.01 * p.sway * dt;
+    const sx = Math.sin(p.phase) * (0.6 + p.sway*0.6);
+    if(p.y > innerHeight + 10){ p.y = -8; p.x = rand(0, innerWidth); }
+    sCtx.beginPath();
+    const grad = sCtx.createRadialGradient(p.x+sx, p.y, 0, p.x+sx, p.y, Math.max(1, p.r*3));
+    grad.addColorStop(0, `rgba(255,255,255,${p.alpha})`);
+    grad.addColorStop(1, `rgba(255,255,255,0)`);
+    sCtx.fillStyle = grad;
+    sCtx.arc(p.x+sx, p.y, p.r, 0, Math.PI*2);
+    sCtx.fill();
+  }
+  requestAnimationFrame(drawStars);
+}
+requestAnimationFrame(drawStars);
+
+/* ========= rocket, star, text DOM references ========= */
+const rocket = document.getElementById('rocket');
+const flame = document.getElementById('flame');
+const bigStar = document.getElementById('bigStar');
+const messageText = document.getElementById('messageText');
+const subline = document.getElementById('subline');
+const ui = document.getElementById('ui');
+const credit = document.getElementById('credit');
+
+/* ========= Web Audio: whoosh + crack + boom (synthesized) ========= */
+let AudioCtx, masterGain;
+function ensureAudio(){
+  if(!AudioCtx){
+    AudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = AudioCtx.createGain();
+    masterGain.gain.value = 0.8;
+    masterGain.connect(AudioCtx.destination);
+  }
+}
+
+/* whoosh: rising oscillator + filtered noise fade (for rocket ascent) */
+function playWhoosh(duration=1400){
+  if(!AudioCtx) return;
+  const now = AudioCtx.currentTime;
+  // oscillator (sweep up)
+  const osc = AudioCtx.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(220, now);
+  osc.frequency.exponentialRampToValueAtTime(1300, now + duration/1000);
+  const oscGain = AudioCtx.createGain(); oscGain.gain.setValueAtTime(0.0001, now);
+  oscGain.gain.exponentialRampToValueAtTime(0.12, now + 0.06);
+  oscGain.gain.exponentialRampToValueAtTime(0.0001, now + duration/1000);
+  osc.connect(oscGain).connect(masterGain);
+
+  // filtered noise for breath
+  const bufferSize = 2 * AudioCtx.sampleRate;
+  const noiseBuf = AudioCtx.createBuffer(1, bufferSize, AudioCtx.sampleRate);
+  const data = noiseBuf.getChannelData(0);
+  for(let i=0;i<bufferSize;i++){ data[i] = (Math.random()*2-1) * Math.pow(1 - i/bufferSize, 1.2); }
+  const noise = AudioCtx.createBufferSource(); noise.buffer = noiseBuf; noise.loop = false;
+  const noiseFilt = AudioCtx.createBiquadFilter(); noiseFilt.type = 'bandpass'; noiseFilt.frequency.setValueAtTime(800, now);
+  noise.connect(noiseFilt);
+  const nGain = AudioCtx.createGain(); nGain.gain.setValueAtTime(0.001, now);
+  nGain.gain.linearRampToValueAtTime(0.08, now + 0.06);
+  nGain.gain.linearRampToValueAtTime(0.02, now + duration/1000);
+  noiseFilt.connect(nGain).connect(masterGain);
+
+  // slow sweep the filter to simulate Doppler/whoosh
+  noiseFilt.frequency.setValueAtTime(900, now);
+  noiseFilt.frequency.exponentialRampToValueAtTime(2500, now + duration/1000);
+
+  osc.start(now); osc.stop(now + duration/1000 * 1.02);
+  noise.start(now); noise.stop(now + duration/1000 * 1.02);
+}
+
+/* crack: sharp short transient */
+function playCrack(){
+  if(!AudioCtx) return;
+  const now = AudioCtx.currentTime;
+  const len = 0.14;
+  // short burst noise + highpass
+  const buf = AudioCtx.createBuffer(1, AudioCtx.sampleRate * len, AudioCtx.sampleRate);
+  const d = buf.getChannelData(0);
+  for(let i=0;i<d.length;i++){
+    d[i] = (Math.random()*2 - 1) * Math.pow(1 - i/d.length, 4); // quick decay
+  }
+  const src = AudioCtx.createBufferSource(); src.buffer = buf;
+  const hp = AudioCtx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.setValueAtTime(600, now);
+  const g = AudioCtx.createGain(); g.gain.setValueAtTime(0.9, now);
+  src.connect(hp).connect(g).connect(masterGain);
+  src.start(now);
+}
+
+/* boom: lower deep rumble using filtered noise + sine transient */
+function playBoom(){
+  if(!AudioCtx) return;
+  const now = AudioCtx.currentTime;
+  // low sine transient (impact)
+  const impact = AudioCtx.createOscillator();
+  impact.type = 'sine';
+  impact.frequency.setValueAtTime(80, now);
+  impact.frequency.exponentialRampToValueAtTime(36, now + 0.6);
+  const ig = AudioCtx.createGain(); ig.gain.setValueAtTime(0.0001, now);
+  ig.gain.exponentialRampToValueAtTime(0.9, now + 0.02);
+  ig.gain.exponentialRampToValueAtTime(0.0001, now + 0.9);
+  impact.connect(ig).connect(masterGain);
+
+  // rumble: filtered noise
+  const len = 1.1;
+  const buf = AudioCtx.createBuffer(1, AudioCtx.sampleRate * len, AudioCtx.sampleRate);
+  const d = buf.getChannelData(0);
+  for(let i=0;i<d.length;i++){
+    d[i] = (Math.random()*2-1) * Math.pow(1 - i/d.length, 1.6);
+  }
+  const src = AudioCtx.createBufferSource(); src.buffer = buf;
+  const lp = AudioCtx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(260, now);
+  const lg = AudioCtx.createGain(); lg.gain.setValueAtTime(0.8, now);
+  src.connect(lp).connect(lg).connect(masterGain);
+  src.start(now);
+
+  impact.start(now);
+  impact.stop(now + 0.9);
+  src.stop(now + len);
+}
+
+/* composite: play crack then boom with tiny timing */
+function playExplosionSound(){
+  playCrack();
+  // small delay for boom after the crack
+  setTimeout(()=> playBoom(), 70);
+}
+
+/* ========= visual burst (canvas) ========= */
+let particles = [];
+function burstVisual(x, y, options = {}){
+  const count = options.count || 100;
+  for(let i=0;i<count;i++){
+    const angle = Math.random() * Math.PI * 2;
+    const speed = rand(2.2, 7.5) * (1 + Math.random()*0.6);
+    const hue = rand(20,55);
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      r: rand(1.2, 3.8),
+      hue,
+      life: rand(900, 1800),
+      born: performance.now(),
+      gravity: 0.02 + Math.random()*0.06
+    });
+  }
+}
+
+function drawBurst(){
+  bCtx.clearRect(0,0, innerWidth, innerHeight);
+  const now = performance.now();
+  for(let i=particles.length-1;i>=0;i--){
+    const p = particles[i];
+    const age = now - p.born;
+    if(age > p.life){ particles.splice(i,1); continue; }
+    p.vy += p.gravity;
+    p.x += p.vx;
+    p.y += p.vy;
+    const prog = age / p.life;
+    const alpha = Math.max(0, 1 - prog);
+    // glow
+    bCtx.beginPath();
+    const grad = bCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 6);
+    grad.addColorStop(0, `rgba(255, 245, 220, ${alpha*0.9})`);
+    grad.addColorStop(0.3, `hsla(${p.hue},90%,60%, ${alpha*0.75})`);
+    grad.addColorStop(1, `rgba(0,0,0,0)`);
+    bCtx.fillStyle = grad;
+    bCtx.arc(p.x, p.y, p.r * 6, 0, Math.PI*2);
+    bCtx.fill();
+    // core
+    bCtx.beginPath();
+    bCtx.fillStyle = `hsla(${p.hue}, 90%, 60%, ${alpha})`;
+    bCtx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+    bCtx.fill();
+  }
+  requestAnimationFrame(drawBurst);
+}
+requestAnimationFrame(drawBurst);
+
+/* ========= rocket flight sequence ========= */
+let inFlight = false;
+function launchRocket(){
+  if(inFlight) return;
+  inFlight = true;
+  ui.classList.add('active');
+  credit.textContent = "Happy Diwali! 🚀";
+
+  // show star and text
+  bigStar.classList.add('show-star');
+  messageText.classList.add('reveal-text');
+  subline.classList.add('reveal-sub');
+
+  // bring rocket visible
+  rocket.style.opacity = 1;
+  flame.style.opacity = 1;
+
+  // rocket initial animation: prepare translate bottom -> up
+  const startY = window.innerHeight + 120;
+  const peakY = window.innerHeight * 0.28; // explosion height
+  const duration = 2100; // ms ascent
+  const startTime = performance.now();
+  let whooshStarted = false;
+
+  // start audio context and pre-create sounds
+  ensureAudio();
+
+  function step(now){
+    const t = Math.min(1, (now - startTime) / duration);
+    // ease-out cubic
+    const ease = 1 - Math.pow(1 - t, 3);
+    const y = startY - (startY - peakY) * ease;
+    rocket.style.bottom = (window.innerHeight - y - 20) + 'px'; // adjust to css bottom
+    // slight rotation/tilt
+    rocket.style.transform = `translateX(-50%) rotate(${(t-0.5)*12}deg) scale(${1 - t*0.02})`;
+
+    // flame pulse scale by speed
+    flame.style.transform = `translateX(-50%) scale(${1 + 0.6*Math.random()})`;
+
+    // start whoosh sound once when movement begins
+    if(!whooshStarted){
+      whooshStarted = true;
+      // play continuous-ish whoosh (simulate by playing multiple whooshes slightly overlapping)
+      playWhoosh(duration * 0.9);
+    }
+
+    if(t < 1){
+      requestAnimationFrame(step);
+    } else {
+      // explosion at peak (x center)
+      const cx = innerWidth/2;
+      const cy = peakY;
+      // hide rocket quickly
+      rocket.style.transition = 'opacity .25s';
+      rocket.style.opacity = 0;
+      flame.style.opacity = 0;
+
+      // visual burst and sounds
+      burstVisual(cx, cy, { count: 140 });
+      // do smaller surrounding bursts
+      for(let i=0;i<5;i++){
+        setTimeout(()=> burstVisual(cx + rand(-160,160), cy + rand(-40, 70), { count: 40 }), i*80);
+      }
+      // play sounds: crack then boom & sprinkle small cracks
+      playCrack(); // immediate sharp crack
+      setTimeout(()=> {
+        playExplosionSound(); // boom + rumble shortly after
+      }, 70);
+      // tiny additional crack echoes
+      setTimeout(()=> playCrack(), 350);
+      setTimeout(()=> playCrack(), 620);
+
+      // also animate some sparkle sparks falling
+      setTimeout(()=> {
+        // restore rocket for potential repeats (optional)
+        rocket.style.transition = '';
+        rocket.style.opacity = 0;
+        inFlight = false;
+      }, 1200);
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+/* ========= user interaction: click to start ========= */
+document.body.addEventListener('click', async function startOnce(e){
+  // resume audio context on user gesture
+  ensureAudio();
+  if (AudioCtx && AudioCtx.state === 'suspended') {
+    try { await AudioCtx.resume(); } catch(e){ /* ignore */ }
+  }
+  // small visual feedback: quickly pulse the big star before launch
+  bigStar.animate([{ transform: 'scale(.6)', opacity:0 }, { transform: 'scale(1.12)', opacity:1 }], { duration: 700, easing:'cubic-bezier(.2,.9,.2,1)' });
+  // trigger launch
+  launchRocket();
+
+  // allow subsequent clicks to launch again after a small cool-down
+  // (user might want to relaunch) — we keep listener active.
+}, {passive:true});
+
+/* small helper to play initial demo star/text on load (no sound) */
+setTimeout(()=> { bigStar.classList.add('show-star'); messageText.classList.add('reveal-text'); subline.classList.add('reveal-sub'); }, 420);
+
+/* accessibility: keyboard space/enter to launch */
+document.addEventListener('keydown', (e)=> {
+  if(e.code === 'Space' || e.code === 'Enter'){ launchRocket(); }
+});
+</script>
+</body>
+</html>
